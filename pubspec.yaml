@@ -1,6 +1,6 @@
 name: curved_render_text
 description: "The text is bent according to the curvature, which is realized by custom rendering parts, and the actual width and height of the parts can be returned after bending."
-version: 0.0.2
+version: 0.0.3
 homepage: https://github.com/bg-1998/curved_render_text
 
 environment:

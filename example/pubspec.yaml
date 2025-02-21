@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
+#  curved_render_text: ^0.0.3
   curved_render_text:
     path: ../
 

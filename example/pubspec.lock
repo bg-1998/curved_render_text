@@ -52,10 +52,11 @@ packages:
   curved_render_text:
     dependency: "direct main"
     description:
-      path: ".."
-      relative: true
-    source: path
-    version: "0.0.1"
+      name: curved_render_text
+      sha256: "582a99ad4a8b7c751651f7d9d3e6943f7663a5f8fdb39fabfafc06da97c89843"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.0.2"
   fake_async:
     dependency: transitive
     description:
