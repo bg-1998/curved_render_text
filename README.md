@@ -14,7 +14,7 @@
 
 ## 🖼️ Preview
 
-![](https://github.com/brianegan/chewie/raw/master/assets/CupertinoControls.png)
+![](https://github.com/bg-1998/curved_render_text/blob/main/doc/demo_preview.gif?raw=true)
 
 ## 准备工作 🍭
 
