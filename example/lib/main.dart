@@ -31,7 +31,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  double curvature = 20;
+  double curvature = 100;
   final TextStyle _textStyle = const TextStyle(fontSize: 18, color: Colors.black);
   TextStyle _textDecorationStyle = const TextStyle(fontSize: 18, color: Colors.black,decorationThickness: 2);
   final TextEditingController _textEditingController = TextEditingController
@@ -53,18 +53,22 @@ class _MyHomePageState extends State<MyHomePage> {
               alignment: Alignment.center,
               clipBehavior: Clip.none,
               children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Theme.of(context).primaryColor,
-                      width: 1,
+                OverflowBox(
+                  maxWidth: double.infinity,
+                  maxHeight: double.infinity,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Theme.of(context).primaryColor,
+                        width: 1,
+                      ),
                     ),
-                  ),
-                  child: CurvedText(
-                    text: _textEditingController.text,
-                    textStyle: _textStyle,
-                    curvature: curvature/100.0,
-                    afterDrawing: _makeDelegate(_textDecorationStyle,),
+                    child: CurvedText(
+                      text: _textEditingController.text,
+                      textStyle: _textStyle,
+                      curvature: curvature/100.0,
+                      afterDrawing: _makeDelegate(_textDecorationStyle,),
+                    ),
                   ),
                 )
               ],
@@ -143,9 +147,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   maxLines: null,
                   onChanged: (value){
-                    setState(() {
-                      _textEditingController.text = value;
-                    });
+                    setState(() {});
                   },
                 )),
               ],
