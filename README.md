@@ -14,7 +14,7 @@
 
 ## 🖼️ Preview
 
-![1](doc/demo_preview.gif)
+![Demo Preview](https://github.com/bg-1998/curved_render_text/blob/main/doc/demo_preview.gif)
 
 ## 准备工作 🍭
 
