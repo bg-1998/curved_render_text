@@ -14,7 +14,7 @@
 
 ## 🖼️ Preview
 
-![1](doc/demo1.png)
+![1](doc/demo_preview.gif)
 
 ## 准备工作 🍭
 
