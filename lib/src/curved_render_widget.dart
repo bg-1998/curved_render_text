@@ -6,60 +6,61 @@ class CurvedRenderWidget extends SingleChildRenderObjectWidget {
   const CurvedRenderWidget({
     super.key,
     required this.text,
-    this.textStyle,
     required this.curvature,
     this.beforeDrawing,
     this.afterDrawing,
+    this.ignoreDecoration = false,
   });
 
-  final String text;
-  final TextStyle? textStyle;
+  final TextSpan text;
   final double curvature;
   final PainterDelegate? beforeDrawing;
   final PainterDelegate? afterDrawing;
+  final bool ignoreDecoration;
 
   @override
   CurvedRender createRenderObject(BuildContext context) =>
       CurvedRender(
         text: text,
-        textStyle: textStyle,
         curvature: curvature,
         beforeDrawing: beforeDrawing,
         afterDrawing: afterDrawing,
+        ignoreDecoration: ignoreDecoration,
       );
 
   @override
   void updateRenderObject(BuildContext context, CurvedRender renderObject) {
     renderObject.refreshData(
       text: text,
-      textStyle: textStyle,
       curvature: curvature,
       beforeDrawing: beforeDrawing,
       afterDrawing: afterDrawing,
+      ignoreDecoration: ignoreDecoration,
     );
   }
 }
 
 class CurvedRender extends RenderBox {
   CurvedRender({
-    String text = '',
-    TextStyle? textStyle,
+    required TextSpan text,
     double curvature = 1,
     PainterDelegate? beforeDrawing,
     PainterDelegate? afterDrawing,
+    this.ignoreDecoration = false,
   })  :
-        _text = text,
-        _textStyle = textStyle
+        _text = text
   {
+    _textRuns = _getTextRuns(_text,_text.style);
     _beforeDrawing = beforeDrawing;
     _afterDrawing = afterDrawing;
     _textPainter
-      ..text = TextSpan(text: _text, style: textStyle)
+      ..text = _text
       ..layout(minWidth: 0, maxWidth: double.maxFinite);
-    _radius = math.max(_textPainter.height/2, _textPainter.width/2/math.pi/math.max(0.001, curvature.abs()) - _textPainter.height);
+    _letterHeight = _textPainter.height;
+    _radius = math.max(_letterHeight/2, _textPainter.width/2/math.pi/curvature.abs() - _letterHeight);
     _width = _radius;
     _height = _radius;
-    _effectiveRadius = _radius + _textPainter.height;
+    _effectiveRadius = _radius + _letterHeight;
     _curvature = curvature;
     _initialAngle = curvature>=0?0:math.pi;
     final double alignmentOffset =
@@ -71,12 +72,12 @@ class CurvedRender extends RenderBox {
     }else{
       _angleWithAlignment = _initialAngle + alignmentOffset;
       _angleMultiplier = 1;
-      _heightOffset = -_effectiveRadius - _textPainter.height;
+      _heightOffset = -_effectiveRadius - _letterHeight;
     }
   }
 
-  String _text;
-  TextStyle? _textStyle;
+  TextSpan _text;
+  List<TextRun> _textRuns = [];
   late double _curvature;
   late double _initialAngle;
   late double _effectiveRadius;
@@ -86,8 +87,10 @@ class CurvedRender extends RenderBox {
   late double _radius;
   late double _width;
   late double _height;
+  late double _letterHeight;
   PainterDelegate? _beforeDrawing;
   PainterDelegate? _afterDrawing;
+  bool ignoreDecoration;
 
   set width(double value) {
     if (_width == value) return;
@@ -102,41 +105,42 @@ class CurvedRender extends RenderBox {
   }
 
   double get radius => _radius;
-  double get effectiveRadius => _effectiveRadius;
+  double get effectiveRadius => _effectiveRadius+_letterHeight/2;
   double get curvature => _curvature;
-  Offset get centerOffset => Offset(_width / 2, _effectiveRadius+_textPainter.height);
-  double get letterWidth => _textPainter.width;
-  double get letterHeight => _textPainter.height;
+  Offset get centerOffset => Offset(_width / 2, _effectiveRadius+_letterHeight);
+  double get letterHeight => _letterHeight;
 
   final _textPainter = TextPainter(textDirection: TextDirection.ltr);
 
   void refreshData({
-    required String text,
-    TextStyle? textStyle,
+    required TextSpan text,
     double curvature = 1,
     PainterDelegate? beforeDrawing,
-    PainterDelegate? afterDrawing
+    PainterDelegate? afterDrawing,
+    bool ignoreDecoration = false,
   }) {
-    _text = text;
-    _textStyle = textStyle;
     _beforeDrawing = beforeDrawing;
     _afterDrawing = afterDrawing;
     {
+      if(_text!=text||this.ignoreDecoration!=ignoreDecoration){
+        this.ignoreDecoration = ignoreDecoration;
+        _text = text;
+        _textRuns = _getTextRuns(_text,_text.style);
+      }
       _textPainter
-        ..text = TextSpan(text: _text, style: textStyle)
+        ..text = _text
         ..layout(minWidth: 0, maxWidth: double.maxFinite);
-      _radius = math.max(_textPainter.height/2/math.pi/math.max(0.001, curvature.abs()),
-        _textPainter.width/2/math.pi/math.max(0.001, curvature.abs())-_textPainter.height*2,);
+      _letterHeight = _textPainter.height;
+      _radius = math.max(_letterHeight/2, _textPainter.width/2/math.pi/curvature.abs() - _letterHeight);
       _width = _radius;
       _height = _radius;
-      _effectiveRadius = _radius + _textPainter.height;
+      _effectiveRadius = _radius + _letterHeight;
       _curvature = curvature;
       _initialAngle = curvature>=0?0:math.pi;
       sweepAngle = _calculateSweepAngle(
         _textPainter,
-        _textStyle,
         _effectiveRadius,
-        _text,
+        _textRuns,
       );
       final double alignmentOffset =
       _getAlignmentOffset(sweepAngle);
@@ -147,7 +151,7 @@ class CurvedRender extends RenderBox {
       }else{
         _angleWithAlignment = _initialAngle + alignmentOffset;
         _angleMultiplier = 1;
-        _heightOffset = -_effectiveRadius - _textPainter.height;
+        _heightOffset = -_effectiveRadius - _letterHeight;
       }
     }
     markNeedsLayout();
@@ -156,10 +160,10 @@ class CurvedRender extends RenderBox {
   void drawPaint(PaintingContext context, Offset offset) {
     double offsetY = 0;
     if(_curvature<0){
-      offsetY = -_effectiveRadius * 2+_height-_textPainter.height*2;
+      offsetY = -_effectiveRadius * 2+_height-_letterHeight*2;
     }
     context.canvas.translate(offset.dx, offset.dy+offsetY);
-    final effectiveOffset = Offset(_width / 2, _effectiveRadius+_textPainter.height);
+    final effectiveOffset = Offset(_width / 2, _effectiveRadius+_letterHeight);
     context.canvas..save()
       ..translate(effectiveOffset.dx, effectiveOffset.dy)
       ..rotate(_angleWithAlignment);
@@ -180,9 +184,8 @@ class CurvedRender extends RenderBox {
   /// Returns angle where the text rendering stops.
   late double sweepAngle = _calculateSweepAngle(
     _textPainter,
-    _textStyle,
     _effectiveRadius,
-    _text,
+    _textRuns,
   );
 
   /// 返回文本停止的最终角度
@@ -190,11 +193,10 @@ class CurvedRender extends RenderBox {
   double get finalAngle => startAngle + sweepAngle;
 
   void _drawText(Canvas canvas, int angleMultiplier, double heightOffset) {
-    for (int i = 0; i < _text.characters.length; i++) {
-      final graphemeCluster = _text.characters.toList()[i];
+    for (int i = 0; i < _textRuns.length; i++) {
+      final graphemeCluster = _textRuns.toList()[i];
       final translation = _getTranslation(
         _textPainter,
-        _textStyle,
         _effectiveRadius,
         graphemeCluster,
       );
@@ -208,19 +210,48 @@ class CurvedRender extends RenderBox {
     }
   }
 
+  List<TextRun> _getTextRuns(TextSpan textSpan, TextStyle? style) {
+    final List<TextRun> spans = [];
+    if((textSpan.text??'').isNotEmpty){
+      TextStyle? createStyle;
+      if(ignoreDecoration){
+        createStyle = style?.copyWith(
+          decoration: TextDecoration.none,
+        );
+      }else{
+        createStyle = style;
+      }
+      for (var char in textSpan.text!.characters) {
+        spans.add(TextRun(TextSpan(text: char, style: createStyle),style: style));
+      }
+    }
+    if((textSpan.children??[]).isNotEmpty){
+      for (final InlineSpan child in textSpan.children??[]) {
+        spans.addAll(_getTextRuns((child as TextSpan),child.style??style));
+      }
+    }
+    return spans;
+  }
+
   @override
   void performLayout() {
     final Offset center = Offset(_effectiveRadius, _effectiveRadius);
     double letterWidth = 0;
     double letterHeight = 0;
-    for (int i = 0; i < _text.characters.length; i++) {
-      final graphemeCluster = _text.characters.toList()[i];
+    double currentAngle = startAngle+(curvature>0?0:sweepAngle);
+    for (int i = 0; i < _textRuns.length; i++) {
+      final graphemeCluster = _textRuns.toList()[i];
       final translation = _getTranslation(
         _textPainter,
-        _textStyle,
         _effectiveRadius,
         graphemeCluster,
       );
+      final halfAngleOffset = translation.alpha / 2 * _angleMultiplier;
+      _textRuns[i].startAngle = currentAngle;
+      currentAngle += halfAngleOffset*2;
+      _textRuns[i].endAngle = currentAngle;
+      _textRuns[i]..width = translation.letterWidth
+      ..height = translation.letterHeight;
       if (translation.letterWidth > letterWidth) {
         letterWidth = translation.letterWidth;
       }
@@ -232,9 +263,8 @@ class CurvedRender extends RenderBox {
     final double rotationZ;
     firstTranslation = _getTranslation(
       _textPainter,
-      _textStyle,
       _effectiveRadius,
-      _text.characters.first,
+      _textRuns.first,
     );
     final halfAngleOffset = firstTranslation.alpha / 2 * _angleMultiplier;
     rotationZ =
@@ -302,9 +332,9 @@ class CurvedRender extends RenderBox {
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    _beforeDrawing?.call(context, offset, size,effectiveRadius,startAngle, sweepAngle, finalAngle,centerOffset,letterWidth, letterHeight,curvature);
+    _beforeDrawing?.call(context, offset, size,effectiveRadius,startAngle, sweepAngle, finalAngle,centerOffset,curvature, letterHeight,_textRuns);
     drawPaint(context,offset);
-    _afterDrawing?.call(context, offset, size,effectiveRadius,startAngle, sweepAngle, finalAngle,centerOffset,letterWidth, letterHeight,curvature);
+    _afterDrawing?.call(context, offset, size,effectiveRadius,startAngle, sweepAngle, finalAngle,centerOffset,curvature, letterHeight,_textRuns);
   }
 }
 
@@ -312,17 +342,15 @@ double _getAlignmentOffset(double angle) => -angle / 2;
 
 double _calculateSweepAngle(
     TextPainter painter,
-    TextStyle? style,
     double radius,
-    String text,
+    List<TextRun> textSpans,
     ) {
   double finalRotation = 0;
-  for (final graphemeCluster in text.characters) {
+  for (final span in textSpans) {
     final translation = _getTranslation(
       painter,
-      style,
       radius,
-      graphemeCluster,
+      span,
     );
     finalRotation += translation.alpha;
   }
@@ -333,14 +361,12 @@ double _calculateSweepAngle(
 /// Calculates width，height and central angle for the provided [letter].
 LetterTranslation _getTranslation(
     TextPainter painter,
-    TextStyle? style,
     double radius,
-    String letter,
+    TextRun letter,
     ) {
   painter
-    ..text = TextSpan(text: letter, style: style)
+    ..text = letter.textSpan
     ..layout(minWidth: 0, maxWidth: double.maxFinite);
-
   return LetterTranslation.fromRadius(painter.width, painter.height, radius);
 }
 
@@ -356,6 +382,17 @@ class LetterTranslation {
   final double alpha;
 }
 
+class TextRun {
+  TextRun(this.textSpan,{this.style,this.startAngle = 0, this.endAngle = 0,this.width = 0,this.height = 0});
+  final TextSpan textSpan;
+  TextStyle? style;
+  double startAngle;
+  double endAngle;
+  double? width;
+  double? height;
+  double get sweepAngle => endAngle - startAngle;
+}
+
 typedef PainterDelegate = void Function(
     PaintingContext context,
     Offset offset,
@@ -365,7 +402,7 @@ typedef PainterDelegate = void Function(
     double sweepAngle,
     double finalAngle,
     Offset centerOffset,
-    double letterWidth,
-    double letterHeight,
     double curvature,
+    double letterHeight,
+    List<TextRun> textRuns,
     );

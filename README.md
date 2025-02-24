@@ -7,7 +7,7 @@
 
 使用场景：弯曲文本后需要测量实际的文本显示部分的宽高，用以给其添加跟随文本长度以及曲率变化的边框
 
-插件同时支持拓展绘制前和绘制后的方法，允许使用者自定义绘制需要的内容，如：文本上划线、删除线、下划线等。
+支持TextSpan文本渲染，支持拓展绘制前和绘制后的方法，允许使用者自定义绘制文本装饰线，如：文本上划线、删除线、下划线，绘制时建议启用忽略文本装饰等。
 
 该插件在[`flutter_arc_text`](https://pub-web.flutter-io.cn/packages/flutter_arc_text)的基础上大幅修改的，删除了
 许多原有功能及属性。
@@ -29,6 +29,7 @@ dependencies:
 ```
 
 ## 🕹️ 使用方法
+建议看demo示例代码
 
 ```dart
 import 'package:curved_render_text/curved_render_text.dart';
@@ -36,11 +37,29 @@ import 'package:curved_render_text/curved_render_text.dart';
 CurvedText(
   text: '文本根据曲率设置弯曲并返回size',
   textStyle: const TextStyle(fontSize: 18, color: Colors.black),
+  textSpan: TextSpan(...),//传入TextSpan
   curvature: 0.5,//曲率范围-1到1
   beforeDrawing: ...,//文本绘制前绘制
   afterDrawing: ...,//文本绘制后绘制
+  ignoreDecoration: true,//是否忽略TextStyle的decoration属性
 )
 ...
+```
+PainterDelegate回调参数
+```dart
+typedef PainterDelegate = void Function(
+    PaintingContext context,
+    Offset offset,
+    Size size,
+    double radius,//圆半径
+    double startAngle,//绘制开始角度
+    double sweepAngle,//绘制弧度范围
+    double finalAngle,//绘制结束角度
+    Offset centerOffset,//圆中心点偏移
+    double curvature,//曲率
+    double letterHeight,//参与计算的字体高度
+    List<TextRun> textRuns,//文本的绘制信息
+    );
 ```
 
 ## Demo
@@ -82,9 +101,10 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   double curvature = 100;
   final TextStyle _textStyle = const TextStyle(fontSize: 18, color: Colors.black);
-  TextStyle _textDecorationStyle = const TextStyle(fontSize: 18, color: Colors.black,decorationThickness: 2);
   final TextEditingController _textEditingController = TextEditingController
     (text: '文本根据曲率弯曲，通过自定义渲染widget实现，弯曲后可返回widget的实际宽度和高度');
+  bool ignoreDecoration = true;
+  TextDecoration textDecoration = TextDecoration.none;
 
   @override
   Widget build(BuildContext context) {
@@ -113,10 +133,35 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                     ),
                     child: CurvedText(
+                      ignoreDecoration: ignoreDecoration,
                       text: _textEditingController.text,
-                      textStyle: _textStyle,
+                      textStyle: _textStyle.copyWith(
+                        decoration: textDecoration,
+                        decorationColor: _textStyle.color,
+                        decorationThickness: 2,
+                      ),
+                      textSpan: TextSpan(
+                        text: '红色TextSpan',
+                        style: _textStyle.copyWith(
+                          color: Colors.red,
+                          decoration: textDecoration,
+                          decorationColor: Colors.red,
+                          decorationThickness: 2,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: '蓝色TextSpan',
+                            style: _textStyle.copyWith(
+                              color: Colors.blue,
+                              decoration: textDecoration,
+                              decorationColor: Colors.blue,
+                              decorationThickness: 2,
+                            ),
+                          )
+                        ],
+                      ),
                       curvature: curvature/100.0,
-                      afterDrawing: _makeDelegate(_textDecorationStyle,),
+                      afterDrawing: _makeDelegate(),
                     ),
                   ),
                 )
@@ -125,12 +170,12 @@ class _MyHomePageState extends State<MyHomePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(
-                  width: 200,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Slider(
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    SizedBox(
+                      width: 200,
+                      child:Slider(
                         value: curvature,
                         divisions: 200,
                         label: '弯曲程度${curvature.toInt()}%',
@@ -142,51 +187,71 @@ class _MyHomePageState extends State<MyHomePage> {
                           });
                         },
                       ),
-                      Row(
-                        children: [
-                          CupertinoSwitch(value: _textDecorationStyle.decoration==TextDecoration.overline,
-                            activeColor: Theme.of(context).primaryColor,
-                            onChanged: (value){
-                              setState(() {
-                                _textDecorationStyle = _textDecorationStyle.copyWith(
-                                  decoration: value?TextDecoration.overline:TextDecoration.none,
-                                );
-                              });
-                            },),
-                          Text('上划线',style: TextStyle(fontSize: 14,color: Theme.of(context).primaryColor),),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          CupertinoSwitch(value: _textDecorationStyle.decoration==TextDecoration.lineThrough,
-                            activeColor: Theme.of(context).primaryColor,
-                            onChanged: (value){
-                              setState(() {
-                                _textDecorationStyle = _textDecorationStyle.copyWith(
-                                  decoration: value?TextDecoration.lineThrough:TextDecoration.none,
-                                );
-                              });
-                            },),
-                          Text('删除线',style: TextStyle(fontSize: 14,color: Theme.of(context).primaryColor),),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          CupertinoSwitch(value: _textDecorationStyle.decoration==TextDecoration.underline,
-                            activeColor: Theme.of(context).primaryColor,
-                            onChanged: (value){
-                              setState(() {
-                                _textDecorationStyle = _textDecorationStyle.copyWith(
-                                  decoration: value?TextDecoration.underline:TextDecoration.none,
-                                );
-                              });
-                            },),
-                          Text('下划线',style: TextStyle(fontSize: 14,color: Theme.of(context).primaryColor),),
-                        ],
-                      ),
-                    ],
-                  ),
+                    ),
+                    Row(
+                      children: [
+                        Column(
+                          children: [
+                            Row(
+                              children: [
+                                CupertinoSwitch(value: textDecoration==TextDecoration.overline,
+                                  activeColor: Theme.of(context).primaryColor,
+                                  onChanged: (value){
+                                    setState(() {
+                                      textDecoration = value?TextDecoration.overline:TextDecoration.none;
+                                    });
+                                  },),
+                                Text('上划线',style: TextStyle(fontSize: 14,color: Theme.of(context).primaryColor),),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                CupertinoSwitch(value: textDecoration==TextDecoration.lineThrough,
+                                  activeColor: Theme.of(context).primaryColor,
+                                  onChanged: (value){
+                                    setState(() {
+                                      textDecoration = value?TextDecoration.lineThrough:TextDecoration.none;
+                                    });
+                                  },),
+                                Text('删除线',style: TextStyle(fontSize: 14,color: Theme.of(context).primaryColor),),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                CupertinoSwitch(value: textDecoration==TextDecoration.underline,
+                                  activeColor: Theme.of(context).primaryColor,
+                                  onChanged: (value){
+                                    setState(() {
+                                      textDecoration = value?TextDecoration.underline:TextDecoration.none;
+                                    });
+                                  },),
+                                Text('下划线',style: TextStyle(fontSize: 14,color: Theme.of(context).primaryColor),),
+                              ],
+                            ),
+                          ],
+                        ),
+                        SizedBox(width: 20,),
+                        Column(
+                          children: [
+                            Row(
+                              children: [
+                                CupertinoSwitch(value: ignoreDecoration,
+                                  activeColor: Theme.of(context).primaryColor,
+                                  onChanged: (value){
+                                    setState(() {
+                                      ignoreDecoration = !ignoreDecoration;
+                                    });
+                                  },),
+                                Text('忽略默认文本装饰',style: TextStyle(fontSize: 14,color: Theme.of(context).primaryColor),),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
+                SizedBox(width: 20,),
                 SizedBox(width: 200,height: 80,child: CupertinoTextField(
                   showCursor: true,
                   controller: _textEditingController,
@@ -207,7 +272,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  PainterDelegate _makeDelegate(TextStyle textStyle) =>
+  PainterDelegate _makeDelegate() =>
           (PaintingContext context,
           Offset offset,
           Size size,
@@ -216,39 +281,42 @@ class _MyHomePageState extends State<MyHomePage> {
           double sweepAngle,
           double finalAngle,
           Offset centerOffset,
-          double letterWidth,
+          double curvature,
           double letterHeight,
-          double curvature,) {
-        Rect? rect;
-        if(textStyle.decoration == TextDecoration.overline){
-          rect = Rect.fromCircle(
-            center: centerOffset,
-            radius: radius,
-          );
-        } else if(textStyle.decoration == TextDecoration.lineThrough){
-          rect = Rect.fromCircle(
-            center: centerOffset,
-            radius: radius+letterHeight/2,
-          );
-        } else if(textStyle.decoration == TextDecoration.underline){
-          rect = Rect.fromCircle(
-            center: centerOffset,
-            radius: radius+(curvature>=0?0:1)*letterHeight,
-          );
-        }
-        if (rect!=null) {
-          context.canvas.drawArc(
-            rect,
-            startAngle,
-            sweepAngle,
-            false,
-            Paint()
-              ..style = PaintingStyle.stroke
-              ..strokeCap = StrokeCap.round
-              ..strokeWidth = textStyle.decorationThickness??1
-              ..color = textStyle.decorationColor??textStyle.color??Colors.black,
-          );
+          List<TextRun> textRuns,) {
+        for (var textRun in textRuns) {
+          Rect? rect;
+          if(textRun.style?.decoration == TextDecoration.overline){
+            rect = Rect.fromCircle(
+              center: centerOffset,
+              radius: radius+(curvature>=0?1:-1)*letterHeight/2,
+            );
+          } else if(textRun.style?.decoration == TextDecoration.lineThrough){
+            rect = Rect.fromCircle(
+              center: centerOffset,
+              radius: radius,
+            );
+          } else if(textRun.style?.decoration == TextDecoration.underline){
+            rect = Rect.fromCircle(
+              center: centerOffset,
+              radius: radius+(curvature>=0?-1:1)*letterHeight/2,
+            );
+          }
+          if (rect!=null) {
+            context.canvas.drawArc(
+              rect,
+              textRun.startAngle,
+              textRun.sweepAngle,
+              false,
+              Paint()
+                ..style = PaintingStyle.stroke
+                ..strokeCap = StrokeCap.round
+                ..strokeWidth = textRun.textSpan.style?.decorationThickness??1
+                ..color = textRun.textSpan.style?.decorationColor??textRun.textSpan.style?.color??Colors.black,
+            );
+          }
         }
       };
 }
+
 ```
