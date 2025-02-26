@@ -7,7 +7,7 @@
 
 使用场景：弯曲文本后需要测量实际的文本显示部分的宽高，用以给其添加跟随文本长度以及曲率变化的边框
 
-支持TextSpan文本渲染，支持拓展绘制前和绘制后的方法，允许使用者自定义绘制文本装饰线，如：文本上划线、删除线、下划线，绘制时建议启用忽略文本装饰等。
+支持TextSpan以及WidgetSpan渲染，支持拓展绘制前和绘制后的方法，允许使用者自定义绘制文本装饰线，如：文本上划线、删除线、下划线，绘制时建议启用忽略文本装饰等。
 
 该插件在[`flutter_arc_text`](https://pub-web.flutter-io.cn/packages/flutter_arc_text)的基础上大幅修改的，删除了
 许多原有功能及属性。
@@ -137,28 +137,34 @@ class _MyHomePageState extends State<MyHomePage> {
                       ignoreDecoration: ignoreDecoration,
                       text: _textEditingController.text,
                       textStyle: _textStyle.copyWith(
+                        fontSize: 14,
                         decoration: textDecoration,
                         decorationColor: _textStyle.color,
                         decorationThickness: 2,
                       ),
                       textSpan: TextSpan(
-                        text: '红色TextSpan',
-                        style: _textStyle.copyWith(
-                          color: Colors.red,
-                          decoration: textDecoration,
-                          decorationColor: Colors.red,
-                          decorationThickness: 2,
-                        ),
                         children: [
+                          WidgetSpan(child: Icon(Icons.ac_unit,size: 40,color: Colors.green,),alignment: PlaceholderAlignment.middle),
+                          WidgetSpan(child: Icon(Icons.sailing_sharp,size: 20,color: Colors.blueAccent,),alignment: PlaceholderAlignment.middle),
                           TextSpan(
-                            text: '蓝色TextSpan',
+                            text: 'TextSpan',
                             style: _textStyle.copyWith(
                               color: Colors.blue,
                               decoration: textDecoration,
                               decorationColor: Colors.blue,
                               decorationThickness: 2,
                             ),
-                          )
+                          ),
+                          WidgetSpan(child: Icon(Icons.access_alarm,size: 20,color: Colors.purple,),alignment: PlaceholderAlignment.middle),
+                          WidgetSpan(child: Icon(Icons.local_activity,size: 20,color: Colors.amber,),alignment: PlaceholderAlignment.middle),
+                          TextSpan(
+                            text: 'TextSpan',
+                            style: _textStyle.copyWith(
+                              decoration: textDecoration,
+                              decorationColor: _textStyle.color,
+                              decorationThickness: 2,
+                            ),
+                          ),
                         ],
                       ),
                       curvature: curvature/100.0,
