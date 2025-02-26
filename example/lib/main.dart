@@ -68,28 +68,34 @@ class _MyHomePageState extends State<MyHomePage> {
                       ignoreDecoration: ignoreDecoration,
                       text: _textEditingController.text,
                       textStyle: _textStyle.copyWith(
+                        fontSize: 14,
                         decoration: textDecoration,
                         decorationColor: _textStyle.color,
                         decorationThickness: 2,
                       ),
                       textSpan: TextSpan(
-                        text: '红色TextSpan',
-                        style: _textStyle.copyWith(
-                          color: Colors.red,
-                          decoration: textDecoration,
-                          decorationColor: Colors.red,
-                          decorationThickness: 2,
-                        ),
                         children: [
+                          WidgetSpan(child: Icon(Icons.ac_unit,size: 40,color: Colors.green,),alignment: PlaceholderAlignment.middle),
+                          WidgetSpan(child: Icon(Icons.sailing_sharp,size: 20,color: Colors.blueAccent,),alignment: PlaceholderAlignment.middle),
                           TextSpan(
-                            text: '蓝色TextSpan',
+                            text: 'TextSpan',
                             style: _textStyle.copyWith(
                               color: Colors.blue,
                               decoration: textDecoration,
                               decorationColor: Colors.blue,
                               decorationThickness: 2,
                             ),
-                          )
+                          ),
+                          WidgetSpan(child: Icon(Icons.access_alarm,size: 20,color: Colors.purple,),alignment: PlaceholderAlignment.middle),
+                          WidgetSpan(child: Icon(Icons.local_activity,size: 20,color: Colors.amber,),alignment: PlaceholderAlignment.middle),
+                          TextSpan(
+                            text: 'TextSpan',
+                            style: _textStyle.copyWith(
+                              decoration: textDecoration,
+                              decorationColor: _textStyle.color,
+                              decorationThickness: 2,
+                            ),
+                          ),
                         ],
                       ),
                       curvature: curvature/100.0,
