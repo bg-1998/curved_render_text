@@ -1,3 +1,9 @@
+## 1.1.0
+* update readme.
+* update example.
+* 新增支持WidgetSpan.(Added support for WidgetSpan)
+* Fixed some bugs
+
 ## 1.0.0
 
 * 重要更新.
